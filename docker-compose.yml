@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  mvp-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mvp_dev_env
+    ports:
+      - "3000:3000" # Web App
+      - "3001:3001" # API
+    volumes:
+      - .:/app
+      - /app/node_modules # Optional: if you want node_modules isolated in the container, but since we run pnpm install on host volume it will update host node_modules too.
+    environment:
+      - NODE_ENV=development
+      # You can override API URLs here if needed for docker networking, though usually localhost works if ports are mapped
+    command: []

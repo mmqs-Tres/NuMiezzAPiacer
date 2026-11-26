@@ -1,0 +1,95 @@
+import { Coordinates, Vehicle, Booking, Ride, Money, FleetZone, VehicleSearchFilters, FaultReport, WorkZone } from '../types';
+import { VehicleStatus, BookingStatus, RideStatus, UserRole } from '../enums';
+
+export interface User {
+  id: string;
+  email: string;
+  role: UserRole;
+  createdAt: Date;
+  firstName?: string;
+  lastName?: string;
+  city?: string;
+  arcBorn?: Date;
+}
+
+// --- Repositories ---
+
+export interface IUserRepository {
+  findById(id: string): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  create(data: Omit<User, 'id' | 'createdAt'>): Promise<User>;
+}
+
+export interface IVehicleRepository {
+  findById(id: string): Promise<Vehicle | null>;
+  findNearby(coords: Coordinates, radiusKm: number): Promise<Vehicle[]>;
+  search(filters: VehicleSearchFilters): Promise<Vehicle[]>;
+  updateStatus(id: string, status: VehicleStatus): Promise<void>;
+  updateLocation(id: string, location: Coordinates): Promise<void>;
+}
+
+export interface IBookingRepository {
+  findById(id: string): Promise<Booking | null>;
+  findActiveByUserId(userId: string): Promise<Booking | null>;
+  create(data: Omit<Booking, 'id' | 'createdAt'>): Promise<Booking>;
+  updateStatus(id: string, status: BookingStatus): Promise<void>;
+}
+
+export interface IRideRepository {
+  findById(id: string): Promise<Ride | null>;
+  findActiveByUserId(userId: string): Promise<Ride | null>;
+  findByUserId(userId: string): Promise<Ride[]>;
+  create(data: Omit<Ride, 'id'>): Promise<Ride>;
+  updateStatus(id: string, status: RideStatus): Promise<void>;
+  end(id: string, data: Pick<Ride, 'endedAt' | 'endLocation' | 'distanceKm' | 'durationMinutes' | 'totalCost'>): Promise<Ride>;
+  findStartedBetween(from: Date, to: Date): Promise<Ride[]>;
+}
+
+// --- Services ---
+
+export interface IUnlockService {
+  unlock(vehicleId: string, rideId: string): Promise<{ success: boolean; unlockCode?: string }>;
+  lock(vehicleId: string, rideId: string): Promise<{ success: boolean }>;
+}
+
+export interface IRemoteCommandService {
+  block(vehicleId: string): Promise<{ success: boolean }>;
+  unblock(vehicleId: string): Promise<{ success: boolean }>;
+}
+
+export interface IZoneValidator {
+  isInServiceZone(coords: Coordinates): Promise<boolean>;
+  isInParkingZone(coords: Coordinates): Promise<{ valid: boolean; zoneId?: string }>;
+  isInBlockedArea(coords: Coordinates): Promise<{ blocked: boolean; zoneId?: string }>;
+}
+
+export interface IFleetZoneRepository {
+  findAll(): Promise<FleetZone[]>;
+  findById(id: string): Promise<FleetZone | null>;
+}
+
+export interface IWorkZoneRepository {
+  findAll(): Promise<WorkZone[]>;
+  findActive(): Promise<WorkZone[]>;
+  create(data: Omit<WorkZone, 'id' | 'createdAt'>): Promise<WorkZone>;
+}
+
+export interface IGpsTrackingService {
+  getCurrentPosition(vehicleId: string): Promise<Coordinates | null>;
+  resolveUserPosition(provided: Coordinates | null): Promise<Coordinates>;
+}
+
+export interface IFaultReportRepository {
+  findAll(): Promise<FaultReport[]>;
+  findById(id: string): Promise<FaultReport | null>;
+}
+
+export interface IBillingService {
+  calculateRideCost(
+    startedAt: Date,
+    endedAt: Date,
+    distanceKm: number,
+    pricing: import('../types').PricingPlan
+  ): Promise<Money>;
+  chargeUser(userId: string, amount: Money, rideId: string): Promise<{ transactionId: string }>;
+}
